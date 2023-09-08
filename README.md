@@ -1,4 +1,4 @@
-# Java Chess Game Project
+# Chess
 
 ## Overview
 
