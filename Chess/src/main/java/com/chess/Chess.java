@@ -15,6 +15,7 @@ public class Chess extends Application {
     public static final int SCREEN_WIDTH = 1200;
     public static final int SCREEN_HEIGHT = 800;
     private final GameView gameView = new GameView();
+    private boolean playAsWhite;
 
     @Override
     public void start(Stage stage) {
@@ -118,6 +119,16 @@ public class Chess extends Application {
         blackButton.setToggleGroup(colorGroup);
         whiteButton.setSelected(true);
 
+        playAsWhite = whiteButton.isSelected();
+
+        colorGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == whiteButton) {
+                playAsWhite = true;
+            } else if (newValue == blackButton) {
+                playAsWhite = false;
+            }
+        });
+
         HBox colorBox = new HBox(10);
         colorBox.setAlignment(Pos.CENTER_LEFT);
         colorBox.getChildren().addAll(whiteButton, blackButton);
@@ -175,7 +186,7 @@ public class Chess extends Application {
         playClassicButton.setOnMousePressed(e -> playClassicButton.setStyle(pressedStyle));
         playClassicButton.setOnMouseReleased(e -> {
             playClassicButton.setStyle(buttonStyle);
-            gameView.gameView(stage, this, true, true);
+            gameView.gameView(stage, this, playAsWhite, true);
         });
 
     }

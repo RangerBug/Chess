@@ -26,7 +26,7 @@ public class Piece {
         game.board[locR][locC] = this;
     }
 
-    public List<Move> getPossibleMoves() {
+    public List<Move> loadPsudoMoves() {
         return switch (this.type) {
             case PAWN -> getValidPawnMoves();
             case ROOK -> getValidRookMoves();

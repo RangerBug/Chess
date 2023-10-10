@@ -9,7 +9,11 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import java.util.List;
 
 public class GameView {
     public Stage stage;
@@ -19,6 +23,11 @@ public class GameView {
     public static final int WIDTH = 8, HEIGHT = 8;
     private final Group tileGroup = new Group();
     private final Group pieceGroup = new Group();
+    private final Group highlightGroup = new Group();
+    private final Group lastMoveHighlightGroup = new Group();
+    private final Rectangle highlight = new Rectangle(GameView.TILE_SIZE, GameView.TILE_SIZE);
+    private final Rectangle highlight_start = new Rectangle(GameView.TILE_SIZE, GameView.TILE_SIZE);
+    private final Rectangle highlight_end = new Rectangle(GameView.TILE_SIZE, GameView.TILE_SIZE);
 
     public void gameView(Stage stage, Chess mainView, boolean playWhite, boolean whiteToMove) {
 
@@ -27,11 +36,23 @@ public class GameView {
         Scene scene = new Scene(root, SCREEN_WIDTH, SCREEN_HEIGHT);
         this.stage = stage;
 
-        GameEngine game = new GameEngine(playWhite, "classic", whiteToMove);
+        GameEngine game = new GameEngine(playWhite, "classic", whiteToMove, scene, this);
+
+        highlight.setFill(javafx.scene.paint.Color.rgb(245, 214, 5, 0.4));
+        highlight_start.setFill(javafx.scene.paint.Color.rgb(245, 214, 5, 0.4));
+        highlight_start.setVisible(false);
+        highlight_end.setFill(javafx.scene.paint.Color.rgb(245, 214, 5, 0.4));
+        highlight_end.setVisible(false);
+        if (!lastMoveHighlightGroup.getChildren().contains(highlight_start)) {
+            lastMoveHighlightGroup.getChildren().add(highlight_start);
+        }
+        if (!lastMoveHighlightGroup.getChildren().contains(highlight_end)) {
+            lastMoveHighlightGroup.getChildren().add(highlight_end);
+        }
 
         drawBoard(game);
 
-        root.getChildren().addAll(tileGroup, pieceGroup);
+        root.getChildren().addAll(tileGroup, lastMoveHighlightGroup, highlightGroup, pieceGroup);
 
         // Buttons
         VBox buttonBox = new VBox();
@@ -47,7 +68,13 @@ public class GameView {
         root.setRight(buttonBox);
 
         menuButton.setOnAction(actionEvent -> {
-            root.setTop(null);
+            tileGroup.getChildren().clear();
+            highlightGroup.getChildren().clear();
+            pieceGroup.getChildren().clear();
+            //textGroup.getChildren().clear();
+            game.clickBuffer = null;
+            game.gameEnded = true;
+            root.setTop(null);   // edit or remove this if doing overlay pane for end of game
             mainView.start(stage);
         });
 
@@ -85,6 +112,53 @@ public class GameView {
         }
     }
 
+    public void drawHighlights(Piece piece, int hx, int hy, GameEngine game) {
+        // Drawing highlight
+        highlight.setX(hx);
+        highlight.setY(hy);
+        if (!highlightGroup.getChildren().contains(highlight)){highlightGroup.getChildren().add(highlight);}
+
+        // Drawing possible moves
+        int r, c;
+        List<Move> validMoves = game.getLegalMovesForPiece(piece);
+        for (Move validMove : validMoves) {
+            Circle dot = new Circle(15);
+            dot.setFill(javafx.scene.paint.Color.rgb(0, 0, 0, .2));
+            r = validMove.endR * TILE_SIZE + (TILE_SIZE / 2);
+            c = validMove.endC * TILE_SIZE + (TILE_SIZE / 2);
+            dot.setCenterX(c);
+            dot.setCenterY(r);
+            // Checking last piece for larger dot
+            Piece checkCapturePiece = game.getPieceAt(validMove.endR, validMove.endC);
+            if (checkCapturePiece != null && checkCapturePiece.color != piece.color) {
+                dot.setRadius(40);
+                dot.setStroke(javafx.scene.paint.Color.rgb(0, 0, 0, .2));
+                dot.setStrokeWidth(7);
+                dot.setFill(Color.TRANSPARENT);
+            }
+
+            if (!highlightGroup.getChildren().contains(dot)) {highlightGroup.getChildren().add(dot);}
+        }
+    }
+
+    public void drawLastMoveHighlights(GameEngine game) {
+        highlight_start.setVisible(true);
+        highlight_end.setVisible(true);
+        if (game.lastMove != null) {
+            // Start square
+            highlight_start.setX(game.lastMove.startC * TILE_SIZE);
+            highlight_start.setY(game.lastMove.startR * TILE_SIZE);
+            // End square
+            highlight_end.setX(game.lastMove.endC * TILE_SIZE);
+            highlight_end.setY(game.lastMove.endR * TILE_SIZE);
+        }
+    }
+
+    public void hideHighlights() {
+        highlightGroup.getChildren().clear();
+    }
+
+
     public ImageView createImage(String piece) {
         Image image = new Image(getClass().getResource("/images/pieceStyle1/" + piece + ".png").toExternalForm());
         ImageView imageView = new ImageView(image);
@@ -93,4 +167,9 @@ public class GameView {
         pieceGroup.getChildren().add(imageView);
         return imageView;
     }
+
+    public void removeImage(ImageView image) {
+        pieceGroup.getChildren().remove(image);
+    }
+
 }
