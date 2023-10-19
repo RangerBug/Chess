@@ -51,11 +51,11 @@ public class GameEngine {
             };
         }
 
-        startGameLoop(scene, gameView);
+        gameLoop(scene, gameView);
 
     }
 
-    public void startGameLoop(Scene scene, GameView gameView) {
+    public void gameLoop(Scene scene, GameView gameView) {
 
         new AnimationTimer() {
             public void handle(long now) {
@@ -63,7 +63,17 @@ public class GameEngine {
                     stop();
                 }
 
+
+
                 scene.setOnMouseClicked(event -> handleClick(event, gameView));
+
+
+                ChessAI agent = new ChessAI();
+                Move move = agent.calculateAIMove(board, getLegalMoves());
+                move(move.startR, move.startC, move.endR, move.endC, gameView);
+
+
+
                 scene.setOnKeyPressed(event -> {
                     switch (event.getCode()) {
                         case ESCAPE:

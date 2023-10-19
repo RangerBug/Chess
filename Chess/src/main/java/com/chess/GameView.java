@@ -28,13 +28,17 @@ public class GameView {
     private final Rectangle highlight = new Rectangle(GameView.TILE_SIZE, GameView.TILE_SIZE);
     private final Rectangle highlight_start = new Rectangle(GameView.TILE_SIZE, GameView.TILE_SIZE);
     private final Rectangle highlight_end = new Rectangle(GameView.TILE_SIZE, GameView.TILE_SIZE);
+    public boolean humanPlaying;
+    public boolean playWhite;
 
-    public void gameView(Stage stage, Chess mainView, boolean playWhite, boolean whiteToMove) {
+    public void gameView(Stage stage, Chess mainView, boolean playWhite, boolean humanPlaying, boolean whiteToMove) {
 
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: #2D2D2D;");
         Scene scene = new Scene(root, SCREEN_WIDTH, SCREEN_HEIGHT);
         this.stage = stage;
+        this.humanPlaying = humanPlaying;
+        this.playWhite = playWhite;
 
         GameEngine game = new GameEngine(playWhite, "classic", whiteToMove, scene, this);
 
