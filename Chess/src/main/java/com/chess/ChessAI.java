@@ -4,8 +4,12 @@ import java.util.List;
 import java.util.Random;
 
 public class ChessAI {
-    public Move calculateAIMove(Piece[][] board, List<Move> moves){
-
+    public int depth;
+    public ChessAI(int depth) {
+        this.depth = depth;
+    }
+    public Move calculateAIMove(Piece[][] board, List<Move> moves, boolean whiteToMove, boolean playAsWhite){
+        System.out.println(scoreBoard(board, whiteToMove, playAsWhite));
         return findRandomMove(moves);
     }
 
@@ -15,33 +19,50 @@ public class ChessAI {
         return moves.get(randomInt);
     }
 
-    /*
-    private int scoreBoard(GameState aiGameState) {
+    public Move getBestMove(Piece[][] initBoard, List<Move> moves, boolean whiteToMove, boolean playAsWhite) {
+        Move bestMove = moves.get(0);
+        int bestScore = 0;
+        for (Move move : moves) {
+            int value = 0;
+            if (value > bestScore) {
+                bestMove = move;
+            }
+        }
+        return bestMove;
+    }
+
+
+
+    private int scoreBoard(Piece[][] board, boolean whiteToMove, boolean playAsWhite) {
         int score = 0;
-        int pieceScore = 0;
         for (int c = 0; c < 8; c++) {
             for (int r = 0; r < 8; r++) {
-                Piece piece = aiGameState.getPieceAt(r, c);
-                Piece.Color color = aiGameState.whiteToMove ? Piece.Color.WHITE : Piece.Color.BLACK;
-                if (piece.color == color) {
-                    switch (piece.type) {
-                        case KING ->
-                            int posScore;
-                            if aiGameState.playAsWhite ? posScore = kingAsWScores[r][c] : posScore = kingAsBScores[r][c];
-                                pieceScore = posScore;
-                        case QUEEN -> pieceScore = 100;
-                        case BISHOP -> pieceScore = 30;
-                        case KNIGHT -> pieceScore = 30;
-                        case ROOK -> pieceScore = 50;
-                        case PAWN -> pieceScore = 10;
-                    }
+                Piece piece = board[r][c];
+                if (piece == null) continue;
+
+                int pieceScore = getPieceScore(piece.type, r, c, whiteToMove, playAsWhite);
+                if ((whiteToMove && piece.color == Piece.Color.WHITE) || (!whiteToMove && piece.color == Piece.Color.BLACK)) {
                     score += pieceScore;
+                } else if ((!whiteToMove && piece.color == Piece.Color.WHITE) || (whiteToMove && piece.color == Piece.Color.BLACK)) {
+                    score -= pieceScore;
                 }
             }
         }
-
+        return score;
     }
-    */
+
+    private int getPieceScore(Piece.Type type, int r, int c, boolean whiteToMove, boolean playAsWhite) {
+        return switch (type) {
+            case KING -> whiteToMove ? kingAsWScores[r][c] : kingAsBScores[r][c];
+            case QUEEN -> 100 + queenScores[r][c];
+            case BISHOP -> 30 + bishopScores[r][c];
+            case KNIGHT -> 30 + knightScores[r][c];
+            case ROOK -> 50 + rookScores[r][c];
+            case PAWN -> 10 + (playAsWhite ? playAsScores[r][c] : oppScores[r][c]);
+            default -> 0;
+        };
+    }
+
 
     int[][] kingAsWScores = {
             {1, 1, 5, 1, 1, 1, 5, 1},
@@ -123,44 +144,3 @@ public class ChessAI {
             {8, 8, 8, 8, 8, 8, 8, 8},
             {10, 10, 10, 10, 10, 10, 10, 10}};
 }
-
-
-
-
-/* TODO:
-Main Screen
-- play button
-- game history button
-- settings
-- leaderboard button
-
-Game Screen
-- board
-- past moves
-- menu/quit button
-
---------
-Backend Game at game start
-- Game Setup
-    - Load board image
-    - Load pieces
-        - Create pieces
-        - Load piece images
-    - Load players as ? human (Player1 = True)
-
-- Game Loop
-    - Check if AI or human is playing
-    - Action handlers
-        - move control
-    - end game calculation
-    - turn handler
-
---- End Game ---
-
-End Game Screen
-- End game text (win or stalemate)
-- Enter name for leader board
-- Save game in history button
-- Game review arrows
-- Main Menu Button
- */

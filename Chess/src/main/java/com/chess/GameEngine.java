@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameEngine {
-    private int i = 0;
     public String[][] startBoard = new String[8][8];
     public Piece[][] board = new Piece[8][8];
     public List<Move> moveHistory = new ArrayList<>();
@@ -21,21 +20,23 @@ public class GameEngine {
     public boolean gameEnded = false;
     public boolean checkMate = false;
     public boolean staleMate = false;
+    public boolean humanVsAI;
+    public boolean aiVsAi;
 
-    public GameEngine (boolean playAsWhite, String boardStart, boolean whiteToMove, Scene scene, GameView gameView) {
+    public GameEngine (boolean playAsWhite, String boardStart, boolean whiteToMove, Scene scene, boolean humanPlaying, GameView gameView) {
         this.playAsWhite = playAsWhite;
         this.whiteToMove = whiteToMove;
 
         if (boardStart.equals("classic") && playAsWhite) {
             startBoard = new String[][] {
+                    {"bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"},
+                    {"bP", "bP", "bP", "bP", "bP", "bP", "bP", "bP"},
                     {"--", "--", "--", "--", "--", "--", "--", "--"},
-                    {"--", "wP", "--", "--", "wB", "--", "--", "--"},
-                    {"--", "--", "--", "--", "--", "--", "--", "bP"},
-                    {"--", "--", "--", "bR", "--", "--", "--", "--"},
-                    {"bQ", "--", "--", "--", "--", "--", "bP", "--"},
-                    {"--", "bB", "--", "--", "--", "--", "bK", "wB"},
-                    {"--", "--", "--", "bP", "--", "bP", "--", "wR"},
-                    {"--", "--", "--", "--", "--", "--", "--", "wK"}
+                    {"--", "--", "--", "--", "--", "--", "--", "--"},
+                    {"--", "--", "--", "--", "--", "--", "--", "--"},
+                    {"--", "--", "--", "--", "--", "--", "--", "--"},
+                    {"wP", "wP", "wP", "wP", "wP", "wP", "wP", "wP"},
+                    {"wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"}
             };
 
         } else if (boardStart.equals("classic") && !playAsWhite) {
@@ -51,6 +52,8 @@ public class GameEngine {
             };
         }
 
+        this.humanVsAI = humanPlaying;
+        this.aiVsAi = !humanPlaying;
         gameLoop(scene, gameView);
 
     }
@@ -59,20 +62,29 @@ public class GameEngine {
 
         new AnimationTimer() {
             public void handle(long now) {
+
+                gameEnded = checkForCheckmateOrStalemate();
                 if (gameEnded) {
                     stop();
                 }
 
+                if (humanVsAI) {
+                    if ((whiteToMove && playAsWhite) || (!whiteToMove && !playAsWhite)) {
+                        scene.setOnMouseClicked(event -> handleClick(event, gameView));
+                    } else if (!gameEnded){
+                        ChessAI agent = new ChessAI(4);
+                        Move move = agent.calculateAIMove(board, getLegalMoves(), whiteToMove, playAsWhite);
+                        move(move.startR, move.startC, move.endR, move.endC, gameView);
+                    }
+                } else {
+                    scene.setOnMouseClicked(null);
+                }
 
-
-                scene.setOnMouseClicked(event -> handleClick(event, gameView));
-
-
-                ChessAI agent = new ChessAI();
-                Move move = agent.calculateAIMove(board, getLegalMoves());
-                move(move.startR, move.startC, move.endR, move.endC, gameView);
-
-
+                if (aiVsAi && !gameEnded) {
+                    ChessAI agent = new ChessAI(4);
+                    Move move = agent.calculateAIMove(board, getLegalMoves(), whiteToMove, playAsWhite);
+                    move(move.startR, move.startC, move.endR, move.endC, gameView);
+                }
 
                 scene.setOnKeyPressed(event -> {
                     switch (event.getCode()) {
@@ -81,8 +93,6 @@ public class GameEngine {
                             break;
                     }
                 });
-
-                gameEnded = checkForCheckmateOrStalemate();
             }
         }.start();
     }
@@ -366,6 +376,7 @@ public class GameEngine {
             return true;
         } else if (checkPiecesLeft()) {
             this.staleMate = true;
+            System.out.println("Stalemate");
             return true;
         }
         return false;

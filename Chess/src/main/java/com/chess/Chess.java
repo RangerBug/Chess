@@ -121,6 +121,7 @@ public class Chess extends Application {
         whiteButton.setSelected(true);
 
         playAsWhite = whiteButton.isSelected();
+        humanPlaying = onePlayerButton.isSelected();
 
         colorGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == whiteButton) {
@@ -129,6 +130,12 @@ public class Chess extends Application {
                 playAsWhite = false;
             }
         });
+
+        if (playerGroup.getSelectedToggle() == onePlayerButton) {
+            humanPlaying = true;
+        } else if (playerGroup.getSelectedToggle() == aiPlaysButton) {
+            humanPlaying = false;
+        }
 
         playerGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == onePlayerButton) {

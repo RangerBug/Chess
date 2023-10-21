@@ -40,7 +40,7 @@ public class GameView {
         this.humanPlaying = humanPlaying;
         this.playWhite = playWhite;
 
-        GameEngine game = new GameEngine(playWhite, "classic", whiteToMove, scene, this);
+        GameEngine game = new GameEngine(playWhite, "classic", whiteToMove, scene, humanPlaying, this);
 
         highlight.setFill(javafx.scene.paint.Color.rgb(245, 214, 5, 0.4));
         highlight_start.setFill(javafx.scene.paint.Color.rgb(245, 214, 5, 0.4));
