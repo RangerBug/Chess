@@ -9,7 +9,7 @@ public class Piece {
     public Color color;
     public ImageView image;
     public int locC, locR;
-    private final GameEngine game;
+    public final GameEngine game;
 
     public Piece (Type type, Color color, ImageView image, int locR, int locC, GameEngine game) {
         this.type = type;
@@ -24,6 +24,15 @@ public class Piece {
 
         this.game = game;
         game.board[locR][locC] = this;
+    }
+
+    public Piece(Piece other) {
+        this.type = other.type;
+        this.color = other.color;
+        this.image = other.image;
+        this.locC = other.locC;
+        this.locR = other.locR;
+        this.game = other.game;
     }
 
     public List<Move> loadPsudoMoves() {

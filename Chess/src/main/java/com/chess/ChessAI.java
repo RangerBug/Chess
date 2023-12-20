@@ -4,46 +4,107 @@ import java.util.List;
 import java.util.Random;
 
 public class ChessAI {
-    public int depth;
-    public ChessAI(int depth) {
-        this.depth = depth;
+    public int movesSearched = 0;
+    public GameEngine game;
+    public GameView gameView;
+    public ChessAI(GameEngine game, GameView gameView) {
+        this.game = game;
+        this.gameView = gameView;
     }
-    public Move calculateAIMove(Piece[][] board, List<Move> moves, boolean whiteToMove, boolean playAsWhite){
-        System.out.println(scoreBoard(board, whiteToMove, playAsWhite));
+    public Move calculateAIMove(List<Move> moves) {
+        double difficulty = Chess.slider.getValue();
+        if (difficulty > 76) {
+            return getBestMove(moves, 4);
+        } else if (difficulty > 24 && difficulty < 76) {
+            return getBestMove(moves, 2);
+        }
         return findRandomMove(moves);
     }
-
     public Move findRandomMove(List<Move> moves) {
         Random rand = new Random();
         int randomInt = rand.nextInt(moves.size());
         return moves.get(randomInt);
     }
 
-    public Move getBestMove(Piece[][] initBoard, List<Move> moves, boolean whiteToMove, boolean playAsWhite) {
-        Move bestMove = moves.get(0);
-        int bestScore = 0;
+
+    public Move getBestMove(List<Move> moves, int depth) {
+        Move calculatedMove = maxValue(game, moves, depth, Integer.MIN_VALUE, Integer.MAX_VALUE).move;
+        System.out.println(movesSearched);
+        movesSearched = 0;
+
+        if (!moves.contains(calculatedMove)) {
+            System.out.println("Does not contain");
+            return moves.get(0);
+        }
+        return calculatedMove;
+    }
+
+    public Pair maxValue(GameEngine gameState, List<Move> moves, int depth, int alpha, int beta) {
+        if (depth == 0 || moves.isEmpty()) {
+            return new Pair(null, scoreBoard());
+        }
+
+        Move bestMove = null;
+        int maxScore = Integer.MIN_VALUE;
+
         for (Move move : moves) {
-            int value = 0;
-            if (value > bestScore) {
+            movesSearched++;
+            gameState.move(move.startR, move.startC, move.endR, move.endC, gameView);
+            int score = minValue(gameState, gameState.getLegalMoves(), depth - 1, alpha, beta).value;
+            gameState.undoMove();
+
+            if (score > maxScore) {
+                maxScore = score;
                 bestMove = move;
             }
+
+            alpha = Math.max(alpha, score);
+            if (beta <= alpha) {
+                break;
+            }
         }
-        return bestMove;
+        return new Pair(bestMove, maxScore);
+    }
+
+    public Pair minValue(GameEngine gameState, List<Move> moves, int depth, int alpha, int beta) {
+        if (depth == 0 || moves.isEmpty()) {
+            return new Pair(null, scoreBoard());
+        }
+
+        Move bestMove = null;
+        int minScore = Integer.MAX_VALUE;
+
+        for (Move move : moves) {
+            movesSearched++;
+            gameState.move(move.startR, move.startC, move.endR, move.endC, gameView);
+            int score = maxValue(gameState, gameState.getLegalMoves(), depth - 1, alpha, beta).value;
+            gameState.undoMove();
+
+            if (score < minScore) {
+                minScore = score;
+                bestMove = move;
+            }
+
+            beta = Math.min(beta, score);
+            if (beta <= alpha) {
+                break;
+            }
+        }
+        return new Pair(bestMove, minScore);
     }
 
 
-
-    private int scoreBoard(Piece[][] board, boolean whiteToMove, boolean playAsWhite) {
+    private int scoreBoard() {
         int score = 0;
         for (int c = 0; c < 8; c++) {
             for (int r = 0; r < 8; r++) {
-                Piece piece = board[r][c];
+                Piece piece = game.board[r][c];
                 if (piece == null) continue;
 
-                int pieceScore = getPieceScore(piece.type, r, c, whiteToMove, playAsWhite);
-                if ((whiteToMove && piece.color == Piece.Color.WHITE) || (!whiteToMove && piece.color == Piece.Color.BLACK)) {
+                int pieceScore = getPieceScore(piece.type, r, c);
+                if ((game.whiteToMove && piece.color == Piece.Color.WHITE) || (!game.whiteToMove && piece.color == Piece.Color.BLACK)) {
                     score += pieceScore;
-                } else if ((!whiteToMove && piece.color == Piece.Color.WHITE) || (whiteToMove && piece.color == Piece.Color.BLACK)) {
+                } else if ((!game.whiteToMove && piece.color == Piece.Color.WHITE) || (game.whiteToMove && piece.color == Piece.Color.BLACK)) {
                     score -= pieceScore;
                 }
             }
@@ -51,18 +112,17 @@ public class ChessAI {
         return score;
     }
 
-    private int getPieceScore(Piece.Type type, int r, int c, boolean whiteToMove, boolean playAsWhite) {
+    private int getPieceScore(Piece.Type type, int r, int c) {
         return switch (type) {
-            case KING -> whiteToMove ? kingAsWScores[r][c] : kingAsBScores[r][c];
+            case KING -> game.whiteToMove ? kingAsWScores[r][c] : kingAsBScores[r][c];
             case QUEEN -> 100 + queenScores[r][c];
             case BISHOP -> 30 + bishopScores[r][c];
             case KNIGHT -> 30 + knightScores[r][c];
             case ROOK -> 50 + rookScores[r][c];
-            case PAWN -> 10 + (playAsWhite ? playAsScores[r][c] : oppScores[r][c]);
+            case PAWN -> 10 + (game.playAsWhite ? playAsScores[r][c] : oppScores[r][c]);
             default -> 0;
         };
     }
-
 
     int[][] kingAsWScores = {
             {1, 1, 5, 1, 1, 1, 5, 1},
@@ -143,4 +203,5 @@ public class ChessAI {
             {5, 6, 6, 7, 7, 6, 6, 5},
             {8, 8, 8, 8, 8, 8, 8, 8},
             {10, 10, 10, 10, 10, 10, 10, 10}};
+
 }

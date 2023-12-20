@@ -1,5 +1,6 @@
 package com.chess;
 
+import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
@@ -8,12 +9,15 @@ import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class GameView {
     public Stage stage;
@@ -162,7 +166,6 @@ public class GameView {
         highlightGroup.getChildren().clear();
     }
 
-
     public ImageView createImage(String piece) {
         Image image = new Image(getClass().getResource("/images/pieceStyle1/" + piece + ".png").toExternalForm());
         ImageView imageView = new ImageView(image);
@@ -175,5 +178,108 @@ public class GameView {
     public void removeImage(ImageView image) {
         pieceGroup.getChildren().remove(image);
     }
+
+    public String openPromoteWin(String color, AnimationTimer loop) {
+        loop.stop();
+        Stage promoteWinStage = new Stage();
+        promoteWinStage.initOwner(this.stage);
+        promoteWinStage.initModality(Modality.APPLICATION_MODAL);
+        promoteWinStage.setResizable(false);
+        promoteWinStage.setTitle("Promotion");
+
+        HBox hbox = new HBox();
+
+        // Load images for buttons
+        ImageView queen = createImage(color + "Q");
+        ImageView bishop = createImage(color + "B");
+        ImageView knight = createImage(color + "N");
+        ImageView rook = createImage(color + "R");
+
+        // Buttons
+        Button queenButton = new Button("", queen);
+        Button bishopButton = new Button("", bishop);
+        Button knightButton = new Button("", knight);
+        Button rookButton = new Button("", rook);
+
+        // Button Size
+        double buttonSize = 50;
+        queenButton.setPrefSize(buttonSize, buttonSize);
+        bishopButton.setPrefSize(buttonSize, buttonSize);
+        knightButton.setPrefSize(buttonSize, buttonSize);
+        rookButton.setPrefSize(buttonSize, buttonSize);
+
+        hbox.getChildren().addAll(queenButton, bishopButton, knightButton, rookButton);
+
+        //Scene promoteScene = new Scene(hbox, 464, 107);
+        Scene promoteScene = new Scene(hbox, 500, 150);
+        promoteWinStage.setScene(promoteScene);
+
+        // Use AtomicReference for a reference that can be final but still allow its contents to be changed
+        AtomicReference<String> selectedImage = new AtomicReference<>("Q");
+
+        // Event handlers for each button
+        queenButton.setOnAction(e -> {
+            promoteWinStage.close();
+        });
+
+        bishopButton.setOnAction(e -> {
+            selectedImage.set("B");
+            promoteWinStage.close();
+        });
+
+        knightButton.setOnAction(e -> {
+            selectedImage.set("N");
+            promoteWinStage.close();
+        });
+
+        rookButton.setOnAction(e -> {
+            selectedImage.set("R");
+            promoteWinStage.close();
+        });
+
+        promoteWinStage.showAndWait();
+        loop.start();
+        return selectedImage.get();
+    }
+
+    public void displayBoard(Piece[][] board) {
+        // Clear existing pieces from the view
+        pieceGroup.getChildren().clear();
+
+        // Iterate over the board to display each piece
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                Piece piece = board[r][c];
+                if (piece != null) {
+                    // Create an image for the piece
+                    String pieceNotation = getPieceNotation(piece);
+                    ImageView imageView = createImage(pieceNotation);
+
+                    // Set the image view properties
+                    imageView.setX(c * GameView.TILE_SIZE);
+                    imageView.setY(r * GameView.TILE_SIZE);
+
+                    // Update the piece's image reference
+                    piece.image = imageView;
+                }
+            }
+        }
+    }
+
+    private String getPieceNotation(Piece piece) {
+        String colorNotation = piece.color == Piece.Color.WHITE ? "w" : "b";
+        String typeNotation;
+        switch (piece.type) {
+            case PAWN: typeNotation = "P"; break;
+            case KNIGHT: typeNotation = "N"; break;
+            case BISHOP: typeNotation = "B"; break;
+            case ROOK: typeNotation = "R"; break;
+            case QUEEN: typeNotation = "Q"; break;
+            case KING: typeNotation = "K"; break;
+            default: throw new IllegalStateException("Unexpected piece type: " + piece.type);
+        }
+        return colorNotation + typeNotation;
+    }
+
 
 }

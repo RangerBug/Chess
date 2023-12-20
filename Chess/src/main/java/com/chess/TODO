@@ -15,7 +15,7 @@ x Ensure pieces can be captured and removed from the board.
  Implement specific chess rules:
 x  Castling
 x  En passant
-/ Pawn promotion
+x  Pawn promotion
 x  Check and checkmate
 x  Stalemate
 
@@ -31,7 +31,7 @@ x Provide a menu or settings for starting a new game or changing options.
 AI Integration (for playing against the computer):
 
 x Provide options for player vs. player and player vs. AI modes.
- Develop or integrate an existing AI for chess.
+x Develop an AI for chess.
  Allow multiple difficulty levels for the AI.
 
 
@@ -45,8 +45,6 @@ x Provide a button or option to load a game.
 Additional Features (optional):
  Display captured pieces.
  Implement timers for each player (optional for blitz/bullet games).
- Implement chess variants (e.g., Fischer Random Chess, Horde Chess).
  Allow online multiplayer mode.
- Implement game chat or messaging (for online mode).
  Offer tutorials or guides for beginners.
  Keep track of player statistics and scores.

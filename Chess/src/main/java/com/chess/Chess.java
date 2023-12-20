@@ -17,6 +17,7 @@ public class Chess extends Application {
     private final GameView gameView = new GameView();
     private boolean playAsWhite;
     private boolean humanPlaying;
+    public static Slider slider = new Slider();
 
     @Override
     public void start(Stage stage) {
@@ -152,10 +153,9 @@ public class Chess extends Application {
         VBox.setMargin(playerBox, new Insets(10));
         VBox.setMargin(colorBox, new Insets(10));
 
-        Slider slider = new Slider();
         slider.setMin(0);
         slider.setMax(100);
-        slider.setValue(100);
+        slider.setValue(50);
         slider.setMajorTickUnit(25);
         slider.setMinorTickCount(0);
         slider.setShowTickLabels(true);

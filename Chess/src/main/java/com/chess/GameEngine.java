@@ -5,11 +5,13 @@ import javafx.scene.Scene;
 import javafx.scene.input.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 public class GameEngine {
     public String[][] startBoard = new String[8][8];
     public Piece[][] board = new Piece[8][8];
     public List<Move> moveHistory = new ArrayList<>();
+    public List<Piece[][]> boardHistory = new ArrayList<>();
     public Move lastMove;
     public boolean playAsWhite;
     public boolean whiteToMove;
@@ -22,10 +24,13 @@ public class GameEngine {
     public boolean staleMate = false;
     public boolean humanVsAI;
     public boolean aiVsAi;
+    public AnimationTimer loop;
+    public GameView gameView;
 
     public GameEngine (boolean playAsWhite, String boardStart, boolean whiteToMove, Scene scene, boolean humanPlaying, GameView gameView) {
         this.playAsWhite = playAsWhite;
         this.whiteToMove = whiteToMove;
+        this.gameView = gameView;
 
         if (boardStart.equals("classic") && playAsWhite) {
             startBoard = new String[][] {
@@ -60,7 +65,9 @@ public class GameEngine {
 
     public void gameLoop(Scene scene, GameView gameView) {
 
-        new AnimationTimer() {
+        GameEngine game = this;
+
+        loop = new AnimationTimer() {
             public void handle(long now) {
 
                 gameEnded = checkForCheckmateOrStalemate();
@@ -72,8 +79,8 @@ public class GameEngine {
                     if ((whiteToMove && playAsWhite) || (!whiteToMove && !playAsWhite)) {
                         scene.setOnMouseClicked(event -> handleClick(event, gameView));
                     } else if (!gameEnded){
-                        ChessAI agent = new ChessAI(4);
-                        Move move = agent.calculateAIMove(board, getLegalMoves(), whiteToMove, playAsWhite);
+                        ChessAI agent = new ChessAI(game, gameView);
+                        Move move = agent.calculateAIMove(game.getLegalMoves());
                         move(move.startR, move.startC, move.endR, move.endC, gameView);
                     }
                 } else {
@@ -81,8 +88,8 @@ public class GameEngine {
                 }
 
                 if (aiVsAi && !gameEnded) {
-                    ChessAI agent = new ChessAI(4);
-                    Move move = agent.calculateAIMove(board, getLegalMoves(), whiteToMove, playAsWhite);
+                    ChessAI agent = new ChessAI(game, gameView);
+                    Move move = agent.calculateAIMove(game.getLegalMoves());
                     move(move.startR, move.startC, move.endR, move.endC, gameView);
                 }
 
@@ -94,7 +101,8 @@ public class GameEngine {
                     }
                 });
             }
-        }.start();
+        };
+        loop.start();
     }
 
     private void handleClick(MouseEvent event, GameView gameView) {
@@ -103,7 +111,7 @@ public class GameEngine {
             int r = (int) event.getY() / TILE_SIZE;
             int c = (int) event.getX() / TILE_SIZE;
 
-            if (r > 7 || c > 7) {
+            if (r < 0 || c < 0 || r > 7 || c > 7) {
                 return;
             }
 
@@ -200,8 +208,7 @@ public class GameEngine {
             // Pawn promotion
             if (piece.type == Piece.Type.PAWN && (endR == 0 || endR == 7)) {
                 String color = piece.color == Piece.Color.WHITE ? "w" : "b";
-                //String pType = gameView.isHumanPlaying ? gameView.openPromoteWin(color) : "Q";
-                String pType = "Q";
+                String pType = gameView.humanPlaying ? gameView.openPromoteWin(color, loop) : "Q";
                 switch (pType) {
                     case "Q" -> piece.type = Piece.Type.QUEEN;
                     case "B" -> piece.type = Piece.Type.BISHOP;
@@ -215,8 +222,10 @@ public class GameEngine {
             }
 
             // Store move in move list
-            moveHistory.add(attemptedMove);
+            this.moveHistory.add(attemptedMove);
             this.lastMove = attemptedMove;
+            this.boardHistory.add(copyBoard(this.board));
+
             gameView.drawLastMoveHighlights(this);
 
             // Switch turns
@@ -368,15 +377,15 @@ public class GameEngine {
         if (legalMoves.isEmpty()) {
             if (inCheck()) {
                 this.checkMate = true;
-                System.out.println("Checkmate");
+                System.out.println("Checkmate Game");
             } else {
                 this.staleMate = true;
-                System.out.println("Stalemate");
+                System.out.println("Stalemate Game");
             }
             return true;
         } else if (checkPiecesLeft()) {
             this.staleMate = true;
-            System.out.println("Stalemate");
+            System.out.println("Stalemate Game");
             return true;
         }
         return false;
@@ -571,4 +580,68 @@ public class GameEngine {
 
         return castleMoves;
     }
+
+    public String boardToString(Piece[][] board) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[\n");
+
+        for (int i = 0; i < board.length; i++) {
+            sb.append("  [");
+            for (int j = 0; j < board[i].length; j++) {
+                if (board[i][j] == null) {
+                    sb.append("--");
+                } else {
+                    sb.append(board[i][j].color.toString().toLowerCase().charAt(0)).append(board[i][j].type.toString().charAt(0));
+                }
+                if (j < board[i].length - 1) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("]");
+            if (i < board.length - 1) {
+                sb.append(",\n");
+            }
+        }
+
+        sb.append("\n]");
+
+        return sb.toString();
+    }
+
+    public void undoMove() {
+        if (!boardHistory.isEmpty()) {
+            this.board = copyBoard(boardHistory.get(boardHistory.size() - 2));
+            boardHistory.remove(boardHistory.size() - 1);
+
+            moveHistory.remove(moveHistory.size() - 1);
+
+            if (!moveHistory.isEmpty()) {
+                lastMove = moveHistory.get(moveHistory.size() - 1);
+            } else {
+                lastMove = null;
+            }
+
+            gameView.displayBoard(this.board);
+            //System.out.println(boardToString(this.board));
+
+            this.whiteToMove = !this.whiteToMove;
+            this.gameEnded = false;
+            this.checkMate = false;
+            this.staleMate = false;
+        }
+    }
+
+    private Piece[][] copyBoard(Piece[][] original) {
+        Piece[][] copy = new Piece[8][8];
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                if (original[i][j] != null) {
+                    copy[i][j] = new Piece(original[i][j]);
+                }
+            }
+        }
+        return copy;
+    }
+
+
 }
